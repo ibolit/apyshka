@@ -1,14 +1,18 @@
-from apyshka.api import MyApi, get
-from apyshka.request import Request
+from apyshka.api import Apyshka, get
 
 
-class TestApi(MyApi):
-    root = "http://example.com/api/"
+class TestApi(Apyshka):
+    root = "/api/"
 
     @get("/thing/{number}/")
     def thing_with_number(self, number=4):
-        return Request()
+        raise Exception()
+        return {}
 
 
-API = TestApi()
-req = API.thing_with_number(number=5, other=3)
+API = TestApi("https://example.com/")
+# req = API.thing_with_number(params={"number": 5}, q={"one": "two"})
+
+
+API.thing_with_number(3)
+print(">>>")

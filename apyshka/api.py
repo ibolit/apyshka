@@ -1,65 +1,48 @@
-import inspect
-from contextlib import suppress
-from string import Formatter
+import re
+from urllib.parse import urlencode, urlparse, urlunparse
 
-from apyshka.request import Request
+from apyshka.url_pattern_processor import get_url_pattern_tokens
 
 
-class MyApi:
+class Apyshka:
     root = None
 
 
-    def __init__(self):
+    def __init__(self, domain):
         if self.root is None:
-            print("Need to specify api root")
+            raise ValueError("Need to specify api root")
+        self.domain = domain
 
 
 def get(pattern):
     def wrapper(fn):
         print(pattern)
-        params_processor = ParamsProcessor(fn, pattern)
+        url_pattern_params = get_url_pattern_tokens(fn, pattern)
 
         def inner_wrapper(self, *args, **kwargs):
-            kwargs_processor = KwargsProcessor(params_processor.url_pattern_params)
+            kwargs_processor = KwargsProcessor(url_pattern_params)
             params, query = kwargs_processor.process(args, kwargs)
             request = fn(self, *args, **kwargs)
             if not request:
-                request = Request()
-                request.url = pattern.format(**params)
-                request.query(**query)
+                url = make_url(self, pattern, params, query)
+                print(url)
             return request
 
         return inner_wrapper
     return wrapper
 
 
-class ParamsProcessor:
-    def __init__(self, api_function, url_pattern):
-        self.api_call_params = self.get_declared_params(api_function)
-        self.url_pattern_params = self.get_path_params(url_pattern)
+def make_url(self, pattern, params, query):
+    parts = list(urlparse(self.domain))
+    parts[2] = make_url_path(self.root, pattern, params)
+    parts[4] = urlencode(query, doseq=True)
+    return urlunparse(parts)
 
 
-    def check_fn_params_with_url_pattern(self):
-        if len(set(self.url_pattern_params)) != len(self.api_call_params):
-            # Check that they contain the same values
-            raise ValueError("Pattern must not contain duplicate params")
-
-
-    def get_declared_params(self, fn):
-        all_params = inspect.getfullargspec(fn)[0]
-        with suppress(ValueError):
-            all_params.remove("self")
-        return all_params
-
-
-    def get_path_params(self, path_pattern):
-        if not path_pattern:
-            return []
-        path_field_names = []
-        for x in Formatter().parse(path_pattern):
-            if x[1]:
-                path_field_names.append(x[1])
-        return path_field_names
+def make_url_path(api_root, pattern, params):
+    populated_pattern = pattern.format(**params)
+    url_path = "/".join([api_root, populated_pattern])
+    return re.sub("/{2,}", "/", url_path)
 
 
 class KwargsProcessor:
@@ -72,6 +55,7 @@ class KwargsProcessor:
     def process(self, args, kwargs):
         self.look_for_query_in_kwargs(kwargs)
         self.look_for_params(args, kwargs)
+        raise_if_not_dicts(self.query, self.params)
         return self.params, self.query
 
 
@@ -88,7 +72,6 @@ class KwargsProcessor:
 
     def look_for_params_in_kwargs(self, kwargs):
         self.params = kwargs.pop("params", {})
-        raise_if_not_dicts(self.query, self.params)
 
 
     def look_for_one_param_in_args(self, args, path_params, kwargs):
