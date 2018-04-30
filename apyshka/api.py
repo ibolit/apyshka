@@ -16,20 +16,23 @@ class Apyshka:
 
 def get(pattern):
     def wrapper(fn):
-        print(pattern)
         url_pattern_params = get_url_pattern_tokens(fn, pattern)
 
         def inner_wrapper(self, *args, **kwargs):
             kwargs_processor = KwargsProcessor(url_pattern_params)
             params, query = kwargs_processor.process(args, kwargs)
-            request = fn(self, *args, **kwargs)
-            if not request:
+            response = fn(self, *args, **kwargs)
+            if not response:
                 url = make_url(self, pattern, params, query)
                 print(url)
-            return request
+            return response
 
         return inner_wrapper
     return wrapper
+
+
+def post(pattern):
+    pass
 
 
 def make_url(self, pattern, params, query):
@@ -80,7 +83,10 @@ class KwargsProcessor:
             if len(args) == 1 and len(path_params) == 1 and not kwargs:
                 self.params = {path_params[0]: args[0]}
             else:
-                raise ValueError("args only allowed if there is one path param, and only one arg can be present")
+                raise ValueError(
+                    "args only allowed if there is one path param,"
+                    " and only one arg can be present"
+                )
 
 
     def use_kwargs_as_params(self, kwargs):
@@ -100,4 +106,6 @@ def raise_if_not_dicts(query, params):
 
 def raise_if_both(params, args):
     if params and args:
-        raise ValueError("A non-named param is allowed only if `params` argument is not present")
+        raise ValueError(
+            "A non-named param is allowed only if `params` argument is not present"
+        )

@@ -1,4 +1,6 @@
 # apyshka
+Pronounced [ə'pɪʃkɑ:]
+
 Share and enjoy
 
 The idea behind this is to write a micro-framework for writing API wrappers.
