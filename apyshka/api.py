@@ -1,6 +1,8 @@
 import re
 from urllib.parse import urlencode, urlparse, urlunparse
 
+import requests
+
 from apyshka.url_pattern_processor import get_url_pattern_tokens
 
 
@@ -15,6 +17,25 @@ class Apyshka:
 
 
 def get(pattern):
+    def make_http_call(self, inner_pattern, params, query):
+        url = make_url(self, inner_pattern, params, query)
+        return requests.get(url)
+    return wrapper_maker(pattern, make_http_call)
+
+
+def post(pattern, encoding):
+    def make_http_call(self, inner_pattern, params, query):
+        url = make_url(self, inner_pattern, params, {})
+        data = query
+        if encoding == "json":
+            data_dict = {"json": data}
+        else:
+            data_dict = {"data": data}
+        return requests.post(url, **data_dict)
+    return wrapper_maker(pattern, make_http_call)
+
+
+def wrapper_maker(pattern, http_call_fn):
     def wrapper(fn):
         url_pattern_params = get_url_pattern_tokens(fn, pattern)
 
@@ -23,16 +44,14 @@ def get(pattern):
             params, query = kwargs_processor.process(args, kwargs)
             response = fn(self, *args, **kwargs)
             if not response:
-                url = make_url(self, pattern, params, query)
-                print(url)
+                response = http_call_fn(self, pattern, params, query)
+                if response.ok:
+                    return response.json()
+                raise Exception(response.status_code)
             return response
 
         return inner_wrapper
     return wrapper
-
-
-def post(pattern):
-    pass
 
 
 def make_url(self, pattern, params, query):
