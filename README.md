@@ -16,8 +16,8 @@ class ExampleApi(MyApi):
     root = "/api/"  # or "api"
 
     @get("/examples/{example}/")
-    def get_example(self, example):
-        return Request()
+    def get_example(self, example) -> {}:
+        pass
 ```
 
 And then you or your clients should be able to call
@@ -29,3 +29,8 @@ sixth_example = API.get_example(example=6)
 seventh_example = API.get_example(params={"example": 7}, q={"abridged": True}
 # the latter should be transformed to a call to
 # https://example.com/api/examples/7/?abridged=True
+```
+You can alxo leave out the name of the only parameter passed to the api call:
+```python
+fifth = API.get_example(5)
+```

@@ -1,8 +1,10 @@
+from functools import partial
+
 from apyshka.api import Apyshka, get, post
 from apyshka.util import retry
 
-# https://jsonplaceholder.typicode.com/posts/1
-class TestApi(Apyshka):
+
+class ExampleApi(Apyshka):
     root = "/posts/"
 
     @get("{number}")
@@ -14,7 +16,7 @@ class TestApi(Apyshka):
         pass
 
 
-API = TestApi("https://jsonplaceholder.typicode.com/")
+API = ExampleApi("https://jsonplaceholder.typicode.com/")
 # req = API.thing_with_number(params={"number": 5}, q={"one": "two"})
 
 
@@ -23,10 +25,10 @@ API = TestApi("https://jsonplaceholder.typicode.com/")
 # print(">>>")
 
 dct = retry(
-    lambda: API.get_a_post(1),
+    partial(API.get_a_post, 1),
+    # lambda: API.get_a_post(1),
     times=3, sleep=4
 )
 # API.post_thing_with_number(7, q={"something": "In the way she moves"})
 
-print("hello")
 

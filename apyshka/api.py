@@ -14,24 +14,28 @@ class Apyshka:
         if self.root is None:
             raise ValueError("Need to specify api root")
         self.domain = domain
+        self.session = self.prepare_session()
+
+
+    def prepare_session(self):
+        return requests.Session()
 
 
 def get(pattern):
     def make_http_call(self, inner_pattern, params, query):
         url = make_url(self, inner_pattern, params, query)
-        return requests.get(url)
+        return self.session.get(url)
     return wrapper_maker(pattern, make_http_call)
 
 
-def post(pattern, encoding):
+def post(pattern, encoding="json"):
     def make_http_call(self, inner_pattern, params, query):
         url = make_url(self, inner_pattern, params, {})
-        data = query
         if encoding == "json":
-            data_dict = {"json": data}
+            data_dict = {"json": query}
         else:
-            data_dict = {"data": data}
-        return requests.post(url, **data_dict)
+            data_dict = {"data": query}
+        return self.session.post(url, **data_dict)
     return wrapper_maker(pattern, make_http_call)
 
 
@@ -93,7 +97,10 @@ class KwargsProcessor:
 
 
     def look_for_params_in_kwargs(self, kwargs):
-        self.params = kwargs.pop("params", {})
+        params = kwargs.pop("params", {})
+        if not isinstance(params, dict):
+            raise ValueError("Params must be a dictionary")
+        self.params = params
 
 
     def look_for_one_param_in_args(self, args, path_params, kwargs):
